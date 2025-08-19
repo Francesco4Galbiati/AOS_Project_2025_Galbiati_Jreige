@@ -493,9 +493,10 @@ __global__ void kernel_gpu_cuda(par_str d_par_gpu, dim_str d_dim_gpu,
 		//-------------------------------------------------------------
 
 		// home box - shared memory
-		while (wtx < NUMBER_PAR_PER_BOX * NUM_REPLICAS) {
-			rA_shared[wtx] = rA[wtx % NUMBER_PAR_PER_BOX];
-			wtx = wtx + NUMBER_THREADS * NUM_REPLICAS;
+		wtx = wtx % NUMBER_THREADS;
+		while (wtx < NUMBER_PAR_PER_BOX) {
+			rA_shared[wtx + NUMBER_PAR_PER_BOX * thread_replica] = rA[wtx];
+			wtx = wtx + NUMBER_THREADS;
 		}
 		wtx = tx;
 
@@ -536,10 +537,11 @@ __global__ void kernel_gpu_cuda(par_str d_par_gpu, dim_str d_dim_gpu,
 			//-----------------------------------------------------
 
 			// nei box - shared memory
-			while (wtx < NUMBER_PAR_PER_BOX * NUM_REPLICAS) {
-				rB_shared[wtx] = rB[wtx % NUMBER_PAR_PER_BOX];
-				qB_shared[wtx] = qB[wtx % NUMBER_PAR_PER_BOX];
-				wtx = wtx + NUMBER_PAR_PER_BOX * NUM_REPLICAS;
+			wtx = wtx % NUMBER_THREADS;
+			while (wtx < NUMBER_PAR_PER_BOX) {
+				rB_shared[wtx + NUMBER_PAR_PER_BOX * thread_replica] = rB[wtx];
+				qB_shared[wtx + NUMBER_PAR_PER_BOX * thread_replica] = qB[wtx];
+				wtx = wtx + NUMBER_THREADS;
 			}
 			wtx = tx;
 
@@ -549,13 +551,14 @@ __global__ void kernel_gpu_cuda(par_str d_par_gpu, dim_str d_dim_gpu,
 			//-----------------------------------------------------
 			//	Calculation
 			//-----------------------------------------------------
-			while (wtx < NUMBER_PAR_PER_BOX * NUM_REPLICAS) {
+			wtx = wtx % NUMBER_THREADS;
+			while (wtx < NUMBER_PAR_PER_BOX) {
 
 				for (j = NUMBER_THREADS * thread_replica; j < NUMBER_PAR_PER_BOX + (thread_replica * NUMBER_PAR_PER_BOX); j++) {
 
-					r2 = rA_shared[wtx].v + rB_shared[j].v -
+					r2 = rA_shared[wtx + NUMBER_PAR_PER_BOX * thread_replica].v + rB_shared[j].v -
 					DOT(
-							rA_shared[wtx],
+							rA_shared[wtx + NUMBER_PAR_PER_BOX * thread_replica],
 							rB_shared[j]
 					);
 
@@ -567,25 +570,25 @@ __global__ void kernel_gpu_cuda(par_str d_par_gpu, dim_str d_dim_gpu,
 #endif
 					fs = tested_type(2.0) * vij;
 
-					d.x = rA_shared[wtx].x - rB_shared[j].x;
+					d.x = rA_shared[wtx + NUMBER_PAR_PER_BOX * thread_replica].x - rB_shared[j].x;
 
 					fxij = fs * d.x;
 
-					d.y = rA_shared[wtx].y - rB_shared[j].y;
+					d.y = rA_shared[wtx + NUMBER_PAR_PER_BOX * thread_replica].y - rB_shared[j].y;
 
 					fyij = fs * d.y;
 
-					d.z = rA_shared[wtx].z - rB_shared[j].z;
+					d.z = rA_shared[wtx + NUMBER_PAR_PER_BOX * thread_replica].z - rB_shared[j].z;
 
 					fzij = fs * d.z;
 
-					fA[wtx % NUMBER_PAR_PER_BOX].v += (tested_type)(qB_shared[j] * vij);
-					fA[wtx % NUMBER_PAR_PER_BOX].x += (tested_type)(qB_shared[j] * fxij);
-					fA[wtx % NUMBER_PAR_PER_BOX].y += (tested_type)(qB_shared[j] * fyij);
-					fA[wtx % NUMBER_PAR_PER_BOX].z += (tested_type)(qB_shared[j] * fzij);
+					fA[wtx].v += (tested_type)(qB_shared[j] * vij);
+					fA[wtx].x += (tested_type)(qB_shared[j] * fxij);
+					fA[wtx].y += (tested_type)(qB_shared[j] * fyij);
+					fA[wtx].z += (tested_type)(qB_shared[j] * fzij);
 				}
 				// increment work thread index
-				wtx = wtx + NUMBER_PAR_PER_BOX * NUM_REPLICAS;
+				wtx = wtx + NUMBER_THREADS;
 			}
 
 			// reset work index
@@ -822,7 +825,7 @@ int main(int argc, char* argv[]){
 		// launch kernel - all boxes
 		for (streamIdx = 0; streamIdx < nstreams; streamIdx++) {
 			CUSPIS::Kernel<par_str, dim_str, box_str*, FOUR_VECTOR*, tested_type*, FOUR_VECTOR*> 
-				kernel_b(blocks.x, threads.x, 0, streams[streamIdx], kernel_gpu_cuda, CUSPIS::cuspisRedundantKernel);
+				kernel_b(blocks.x, threads.x, 0, streams[streamIdx], kernel_gpu_cuda, CUSPIS::cuspisRedundantThreads);
 			kernel_b.launch(par_cpu, dim_cpu, d_box_gpu[streamIdx], d_rv_gpu[streamIdx], 
 				d_qv_gpu[streamIdx], d_fv_gpu[streamIdx]);
 			checkFrameworkErrors(cudaPeekAtLastError());
