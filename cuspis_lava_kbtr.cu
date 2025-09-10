@@ -299,6 +299,9 @@ void readGold(dim_str dim_cpu, char *output_gold,
 }
 
 void writeGold(dim_str dim_cpu, char *output_gold, FOUR_VECTOR_HOST **fv_cpu) {
+	
+	// Commented code is to save the txt version of the results
+
 	FILE *fp, *fp_txt;
 	int i;
 
@@ -331,7 +334,8 @@ void writeGold(dim_str dim_cpu, char *output_gold, FOUR_VECTOR_HOST **fv_cpu) {
 		// fprintf(fp_txt, "v: %f, x: %f, y: %f, z: %f\n", ((*fv_cpu)[i].v), ((*fv_cpu)[i].x), ((*fv_cpu)[i].y), ((*fv_cpu)[i].z));
 		
 	}
-	fclose(fp_txt);
+	fclose(fp);
+	//fclose(fp_txt);
 }
 
 void gpu_memory_setup(int nstreams, bool gpu_check, dim_str dim_cpu,
@@ -905,3 +909,4 @@ int main(int argc, char* argv[]){
 	return 0;
 
 }
+
