@@ -301,17 +301,17 @@ void readGold(dim_str dim_cpu, char *output_gold,
 void writeGold(dim_str dim_cpu, char *output_gold, FOUR_VECTOR_HOST **fv_cpu) {
 	FILE *fp, *fp_txt;
 	int i;
-  /*
+
 	if ((fp = fopen(output_gold, "wb")) == 0) {
 		printf("The file 'output_forces' was not opened\n");
 		exit (EXIT_FAILURE);
 	}
-  */
+/*
 	if ((fp_txt = fopen("outpud_cuspis_test.txt", "w")) == 0) {
 		printf("The file 'output_forces' was not opened\n");
 		exit (EXIT_FAILURE);
 	}
-
+*/
 	int number_zeros = 0;
 	for (i = 0; i < dim_cpu.space_elem; i = i + 1) {
 		if ((*fv_cpu)[i].v == tested_type_host(0.0))
@@ -322,13 +322,13 @@ void writeGold(dim_str dim_cpu, char *output_gold, FOUR_VECTOR_HOST **fv_cpu) {
 			number_zeros++;
 		if ((*fv_cpu)[i].z == tested_type_host(0.0))
 			number_zeros++;
-    /*
+
 		fwrite(&((*fv_cpu)[i].v), 1, sizeof(tested_type), fp);
 		fwrite(&((*fv_cpu)[i].x), 1, sizeof(tested_type), fp);
 		fwrite(&((*fv_cpu)[i].y), 1, sizeof(tested_type), fp);
 		fwrite(&((*fv_cpu)[i].z), 1, sizeof(tested_type), fp);
-		*/
-		fprintf(fp_txt, "v: %f, x: %f, y: %f, z: %f\n", ((*fv_cpu)[i].v), ((*fv_cpu)[i].x), ((*fv_cpu)[i].y), ((*fv_cpu)[i].z));
+		
+		// fprintf(fp_txt, "v: %f, x: %f, y: %f, z: %f\n", ((*fv_cpu)[i].v), ((*fv_cpu)[i].x), ((*fv_cpu)[i].y), ((*fv_cpu)[i].z));
 		
 	}
 	fclose(fp_txt);
@@ -903,4 +903,5 @@ int main(int argc, char* argv[]){
 	printf("\n");
 
 	return 0;
+
 }
